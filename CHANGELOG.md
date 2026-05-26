@@ -4,6 +4,36 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.1.1] — 2026-05-27
+
+### Fixed
+- **Hikvision `AcsEvent` polling rejected with HTTP 400 `badParameters`** on
+  DS-K1T804AMF (V1.4.1, build 240318). The firmware silently caps
+  `AcsEventCond.searchID` at ~20 characters; Pulsar was generating
+  `erp-agent-<19-digit nanoseconds>` = 29 chars and every poll failed.
+  `searchID` now uses Unix seconds (20 chars). Collision risk is zero in
+  practice — polls are `poll_interval` apart (default 30s).
+  Diagnosed empirically against a live unit because the device returns no
+  hint about the length limit. Code comment documents the constraint.
+
+### Notes
+- **Operators should set the device timezone to match the agent host.** The
+  same firmware also rejects `startTime`/`endTime` whose offset differs from
+  the device's configured `timeZone`. Pulsar formats timestamps using the
+  Go host's local TZ via `time.RFC3339`. If the device is on China time
+  (factory default `+08:00`) and the agent host is on Sri Lanka time
+  (`+05:30`), the device returns `400 badParameters` until the device is
+  reconfigured. Set via the device touchscreen (System → Time) or ISAPI:
+  ```
+  PUT /ISAPI/System/time
+  <Time><timeMode>manual</timeMode><localTime>YYYY-MM-DDThh:mm:ss</localTime><timeZone>CST-5:30:00</timeZone></Time>
+  ```
+
+### Source
+Built from `tachyoniclabs/pulsar@5f113f1`.
+
+[v0.1.1]: https://github.com/tachyoniclabs/pulsar-dist/releases/tag/v0.1.1
+
 ## [v0.1.0] — 2026-05-26
 
 Initial public release.
