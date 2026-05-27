@@ -4,6 +4,39 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.1.3] — 2026-05-27
+
+### Added
+- **macOS install bundle** — universal binary (Intel + Apple Silicon, fused with
+  `lipo`), LaunchDaemon plist, `install.sh` / `uninstall.sh` scripts. Mirrors
+  the Windows service install flow. Files land under `/usr/local/bin`,
+  `/usr/local/etc/pulsar-agent`, and `/Library/LaunchDaemons`. See the bundled
+  `README.txt` for the full sequence.
+- Cross-compile output for `darwin/amd64` and `darwin/arm64` in `build.sh`.
+
+### Fixed
+- **Intermittent `hikvision returned 401` on the poll loop** even when
+  credentials were correct. The HTTP client kept TCP keep-alives enabled;
+  Hikvision DS-K1T804AMF (V1.4.1, build 240318) closes idle keep-alive
+  sockets aggressively, and on the next reuse the digest nonce state on the
+  device no longer matches the client's cache, so it returns 401. Re-testing
+  with `curl --digest` at the same 30s cadence never reproduced the failure,
+  isolating the bug to Go's connection reuse rather than the device. The
+  Hikvision client now sets `DisableKeepAlives: true` on its transport, so
+  every request opens a fresh TCP connection and re-negotiates digest from
+  scratch. Adds ~50ms per call; negligible at poll cadence.
+
+### Notes
+- Bundled macOS binary is **not Apple-signed or notarized**. On first run
+  Gatekeeper may show "cannot verify developer" — right-click → Open once,
+  or run from Terminal. For a public release a Developer ID Application
+  certificate and notarization would be needed.
+
+### Source
+Built from `tachyoniclabs/pulsar@4b6bac7`.
+
+[v0.1.3]: https://github.com/tachyoniclabs/pulsar-dist/releases/tag/v0.1.3
+
 ## [v0.1.2] — 2026-05-27
 
 ### Fixed
