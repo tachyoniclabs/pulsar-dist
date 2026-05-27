@@ -4,6 +4,92 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.1.4] — 2026-05-27
+
+Hardening release from the ACME workshop install — five Hikvision V1.4.x
+firmware quirks discovered + fixed in the field, plus the cloud-side
+`device_user_id` flow (Plan B) and a per-device clock-drift detector on
+the health dashboard.
+
+### Added
+
+- **`attendance_only` mode for door-less terminals** *(default: true)*.
+  When the terminal sits on a wall as an attendance scanner with no door
+  behind it, the agent reclassifies "user identified but device denied"
+  events as `granted`. Side-steps the entire access-control schedule /
+  holiday-group / door-rights plumbing that V1.4.x firmware requires.
+  Real fingerprint mismatches (no user identified) still surface as
+  `denied` so error signal isn't lost. Set to `false` explicitly when
+  the device fronts a real door and you've completed the iVMS-4200
+  Door Configuration wizard.
+- **Clock-drift detector on the health dashboard** (`localhost:9090`).
+  Every 5 minutes Pulsar polls the device's `/ISAPI/System/time` and
+  compares against the agent host clock + timezone. A green/amber/red
+  pill flags drift (>30s warn, >2m error) and timezone mismatches —
+  both silently corrupt event polling because Hikvision queries by
+  local-time strings. Also exposed in `/health` JSON for monitoring.
+- **Numeric employeeNo handling** (`internal/idmap`). Hikvision
+  rejects non-numeric `employeeNo` with `illegalEmployeeNo`
+  (0x60006036, max 8 chars on V1.4.x). The agent now strips non-digits
+  before pushing to the device and reverse-maps incoming swipes so the
+  ERP still sees its original ID. Reverse map persists in bbolt across
+  restarts.
+- **Adaptive back-off on consecutive device failures**
+  (30s → 1m → 5m → 15m). Prevents the polling loop from re-triggering
+  account lockouts when a device is offline / misconfigured.
+- **Plan B provisioning payload** — `device_user_id` and `card_no`
+  carried in the user-change JSON. When the ERP sets `device_user_id`
+  on an employee, the agent pushes that directly (no client-side
+  derivation). When `card_no` is set, the agent additionally enrols
+  the card on devices that support it. Backwards-compatible: payload
+  without these fields falls back to the v0.1.3 path.
+- **Hikvision install playbook** in the source README — activate,
+  NTP, attendance-only vs access-control decision, fingerprint
+  enrolment, smoke test. Saves engineers the day-long debug we did
+  on 2026-05-27.
+
+### Fixed
+
+- **`Valid.enable = false` denied every swipe** on V1.4.x. Counter to
+  the field name, `enable=false` disables the user account — even when
+  the fingerprint matches the device reports `denied` (major=5
+  minor=38). The agent now always sends `enable=true` with a
+  wide-open `beginTime`/`endTime` (1970-01-01 → 2037-12-31) when the
+  ERP doesn't provide explicit validity.
+- **`userVerifyMode = ""` denied every swipe.** Empty string is
+  treated as "no method allowed" on V1.4.x, not "use device default".
+  Agent now defaults to `cardOrFpOrPw` — broadest accepted value per
+  device capabilities, works on fingerprint-only, card-only, and
+  multi-method terminals. Note: `cardOrFp` is rejected by V1.4.x
+  (`badParameters`); the valid combinations are in
+  `GET /ISAPI/AccessControl/UserInfo/capabilities`.
+- **Phantom "granted" rows with empty employee_no.** `mapResult` was
+  treating every Major=5 swipe minor not in the explicit denied-list
+  as `granted`. But Major=5 covers door-open/close sensor events
+  (minor=21/22) too — they have no employee attribution and were
+  flooding the ERP as quarantined "anonymous user" rows. Now uses an
+  explicit `grantedMinors = {1}` allowlist; everything else under
+  Major=5 that isn't in the denied set classifies as `unknown` and
+  is correctly ignored for attendance.
+
+### Compatibility
+
+- Standalone: drop-in upgrade, no config changes required. Existing
+  `config.yaml` still works; `attendance_only` defaults to `true`.
+- Full Plan B benefit (ERP-driven `device_user_id` in the queue,
+  card-only swipe attribution) requires the matching ERP-side
+  migrations (`V792` + `V793`) and service changes. Without them,
+  the agent's idmap fallback covers the gap.
+
+### Notes
+
+- Bundled macOS binary is **not Apple-signed or notarized** —
+  Gatekeeper will warn on first run; right-click → Open once to
+  approve.
+- NSSM is **not bundled** with the Windows zip. Download separately
+  from <https://nssm.cc/download> and drop `win64\nssm.exe` next to
+  `install.bat` before running (see README install step 3).
+
 ## [v0.1.3] — 2026-05-27
 
 ### Added
