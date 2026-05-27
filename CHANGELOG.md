@@ -4,6 +4,24 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.1.2] — 2026-05-27
+
+### Fixed
+- **Events flush to ERP rejected with HTTP 400 `Unrecognized field "device_id"`**.
+  The agent was POSTing `{ "device_id": "...", "events": [...] }` to
+  `/api/v1/integrations/access-control/events`. The ERP's
+  `IngestEventBatchRequest` accepts only `events` (each event already carries
+  its own `device_id` inside). Jackson's strict-unknown-fields rejected the
+  batch. `EventBatch` now serializes as `{ "events": [...] }` only. The dead
+  `deviceID` field on the ERP `Client` and its constructor parameter were
+  removed at the same time — they were used solely for this redundant
+  marshaling.
+
+### Source
+Built from `tachyoniclabs/pulsar@4825d76`.
+
+[v0.1.2]: https://github.com/tachyoniclabs/pulsar-dist/releases/tag/v0.1.2
+
 ## [v0.1.1] — 2026-05-27
 
 ### Fixed
