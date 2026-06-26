@@ -8,10 +8,10 @@ access-control terminals (fingerprint, card, face) to a cloud ERP.
 
 ## What's new in v0.2.0
 
-Pulsar now ships a **guided installer** — no more NSSM, no hand-edited YAML, no
-pasting client IDs or branch UUIDs. Double-click `PulsarSetup.exe`, then a
-browser-based setup wizard walks you through connecting to your ERP and adding
-your terminals. A system-tray app shows status at a glance.
+Pulsar now ships a **guided installer** — no more NSSM, no hand-edited YAML.
+Double-click `PulsarSetup.exe`, then a browser-based setup wizard walks you
+through connecting to your ERP and adding your terminals. A system-tray app
+shows status at a glance.
 
 ## Download
 
@@ -48,10 +48,11 @@ anyway**.
    (auto-start), adds the tray app to your login, and opens the **setup wizard**
    in your browser.
 3. **Complete the wizard** (`http://127.0.0.1:9090`):
-   1. **Connect to your ERP** — in your ERP portal, open your branch and click
-      *"Add access-control agent"* to generate a one-time **pairing code**.
-      Paste it into the wizard. The agent exchanges it for its own scoped
-      credentials — you never handle a client secret or a branch UUID.
+   1. **Connect to your ERP** — generate an **API account** in your ERP's
+      integration settings, then enter its **Client ID** and **Client Secret**,
+      your **ERP URL**, and your **Branch ID** into the wizard. Click **Test &
+      continue** — the wizard verifies the credentials against your ERP before
+      moving on. The secret is sealed on disk and never shown again.
    2. **Find your terminals** — the wizard scans your local network for Hikvision
       devices. Tick the ones you want, enter the device admin password (one field
       applies to all, with per-device override), and hit **Test** to confirm each

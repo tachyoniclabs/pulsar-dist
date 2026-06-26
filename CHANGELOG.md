@@ -19,10 +19,11 @@ without a terminal.
   opens the setup wizard. Clean uninstall from Add/Remove Programs, with an
   opt-in prompt to keep or purge `C:\ProgramData\Pulsar` (default: keep, so a
   reinstall preserves pairing + devices).
-- **Browser setup wizard** at `127.0.0.1:9090`: pair with the ERP via a one-time
-  **pairing code** (no client secret or branch UUID handled by hand), scan the
-  local network for Hikvision terminals (or add by IP) with an inline **Test**
-  that auto-detects the model, then review & finish. The same app is the ongoing
+- **Browser setup wizard** at `127.0.0.1:9090`: connect to the ERP with its
+  existing **API-account credentials** (ERP URL + Client ID + Client Secret +
+  Branch ID), validated inline by a live token **Test**; then scan the local
+  network for Hikvision terminals (or add by IP) with a per-device **Test** that
+  auto-detects the model, and review & finish. The same app is the ongoing
   dashboard — add/edit/remove devices and re-pair, applied live via config
   hot-reload (no restart).
 - **System-tray app** (`pulsar-tray.exe`): green/amber/red status icon plus Open
@@ -42,11 +43,11 @@ without a terminal.
   allowlist, `Origin` check, and a JSON content-type requirement on all
   state-changing requests).
 
-### Requires
+### Notes
 
-- ERP-side support for agent pairing (the *"Add access-control agent"* portal
-  action and the pairing/exchange endpoints). Without it, the wizard's
-  "Connect to your ERP" step cannot complete.
+- The wizard authenticates to the ERP with the **existing API-account**
+  mechanism (OAuth2 client-credentials → JWT at `/api/v1/auth/api-account/token`)
+  — the same one in use today. No new ERP-side endpoints are required.
 
 ## [v0.1.4] — 2026-05-27
 
