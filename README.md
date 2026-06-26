@@ -4,7 +4,14 @@ Signed Windows builds of **Pulsar Agent**, the on-premise edge agent that bridge
 access-control terminals (fingerprint, card, face) to a cloud ERP.
 
 > Source code lives in a separate repository. This repo only ships binaries and
-> install bundles.
+> the installer.
+
+## What's new in v0.2.0
+
+Pulsar now ships a **guided installer** — no more NSSM, no hand-edited YAML, no
+pasting client IDs or branch UUIDs. Double-click `PulsarSetup.exe`, then a
+browser-based setup wizard walks you through connecting to your ERP and adding
+your terminals. A system-tray app shows status at a glance.
 
 ## Download
 
@@ -14,92 +21,96 @@ Each release contains:
 
 | File | Purpose |
 |---|---|
-| `pulsar-agent-windows-vX.Y.Z-<sha>.zip` | Install bundle (binary + scripts + config template) |
+| `PulsarSetup-vX.Y.Z-<sha>.exe` | The installer (everything is inside it) |
 | `SHA256SUMS` | SHA-256 checksums for verification |
 
 ## Verify the download (Windows PowerShell)
 
 ```powershell
-# Replace VERSION with the version you downloaded
-$zip = "pulsar-agent-windows-v0.1.0-d9523dd.zip"
+# Replace with the file you downloaded
+$exe = "PulsarSetup-v0.2.0-3df3779.exe"
 
-# Expected hash from SHA256SUMS
-$expected = (Get-Content SHA256SUMS | Select-String $zip).ToString().Split(" ")[0]
-
-# Actual hash of the downloaded file
-$actual = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower()
+$expected = (Get-Content SHA256SUMS | Select-String $exe).ToString().Split(" ")[0]
+$actual   = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLower()
 
 if ($expected -eq $actual) { "OK" } else { "MISMATCH — do not install" }
 ```
 
+The installer is also code-signed. If Windows SmartScreen still warns on first
+run, that's expected for a freshly-signed publisher — click **More info → Run
+anyway**.
+
 ## Install
 
-1. **Download and verify** the zip (see above).
-2. **Extract** to a working folder, e.g., `C:\pulsar-install\`.
-3. **Download NSSM** from <https://nssm.cc/download>, extract `win64\nssm.exe`,
-   and drop it into the same folder as `install.bat`.
-4. **Edit `config.yaml`** — set device IP, credentials, ERP URL/client, and
-   `provisioning.branch_id` (UUID from your ERP).
-5. **Run as Administrator** from an elevated `cmd.exe`:
-   ```cmd
-   cd C:\pulsar-install
-   install.bat
-   ```
-   This copies files to `C:\pulsar-agent\` and registers Windows service `PulsarAgent`.
-6. **Verify connectivity** before starting the service:
-   ```cmd
-   C:\pulsar-agent\pulsar-agent.exe --check --config C:\pulsar-agent\config.yaml
-   ```
-   Expect `All checks passed.` Exit code 0 means safe to start.
-7. **Start the service**:
-   ```cmd
-   nssm start PulsarAgent
-   ```
-8. **Open the dashboard**: <http://localhost:9090>
+1. **Download and verify** `PulsarSetup.exe` (see above).
+2. **Double-click it.** Approve the User Account Control (admin) prompt. The
+   installer copies the files, registers the `PulsarAgent` Windows service
+   (auto-start), adds the tray app to your login, and opens the **setup wizard**
+   in your browser.
+3. **Complete the wizard** (`http://127.0.0.1:9090`):
+   1. **Connect to your ERP** — in your ERP portal, open your branch and click
+      *"Add access-control agent"* to generate a one-time **pairing code**.
+      Paste it into the wizard. The agent exchanges it for its own scoped
+      credentials — you never handle a client secret or a branch UUID.
+   2. **Find your terminals** — the wizard scans your local network for Hikvision
+      devices. Tick the ones you want, enter the device admin password (one field
+      applies to all, with per-device override), and hit **Test** to confirm each
+      one (it auto-detects the model). No terminals found? Add one by IP.
+   3. **Review & finish** — the agent saves its config, starts polling, and the
+      dashboard shows your devices with live status.
+
+That's it. No NSSM, no config file to edit, no terminal commands.
+
+## Day-to-day (system tray)
+
+After install, the Pulsar icon sits in your system tray (a coloured dot shows
+health: green = running, amber = cloud unreachable, red = stopped):
+
+| Menu item | What it does |
+|---|---|
+| **Open Dashboard** | Opens `http://127.0.0.1:9090` — status + device management |
+| **Open status** | Same dashboard, focused on ERP/device connectivity |
+| **View logs** | Opens the agent log file |
+| **Restart agent** | Restarts the service (asks for admin) |
+| **Quit** | Closes the tray only — the agent keeps running |
+
+**Add, edit, or remove terminals later** from the dashboard's *Devices* section —
+changes apply immediately without a reinstall or restart. You can also
+**re-pair** with your ERP there if credentials are rotated.
+
+## Uninstall
+
+Uninstall from **Settings → Apps** (or Control Panel → Programs). The uninstaller
+stops and removes the `PulsarAgent` service and the tray autostart, then asks
+whether to also delete your configuration and data in `C:\ProgramData\Pulsar`:
+
+- **No** (default) — keeps your ERP pairing and device list, so a reinstall picks
+  up where you left off.
+- **Yes** — removes everything.
+
+## Where things live
+
+| Path | Contents |
+|---|---|
+| `C:\Program Files\Pulsar\` | The binaries (read-only at runtime) |
+| `C:\ProgramData\Pulsar\config.yaml` | Configuration (contains **no secrets**) |
+| `C:\ProgramData\Pulsar\secret.dat` | ERP secret + device passwords, sealed at rest (Windows DPAPI) |
+| `C:\ProgramData\Pulsar\pulsar-agent.log` | Service log |
+| `C:\ProgramData\Pulsar\data\` | Per-device event buffers |
+
+The local dashboard/API listens on `127.0.0.1:9090` only and rejects
+cross-origin browser requests. **Don't repoint the port** — the tray and the
+installed shortcuts assume `9090`.
 
 ## Operations
 
-| Command | Purpose |
+| Task | How |
 |---|---|
-| `nssm start PulsarAgent` | Start service |
-| `nssm stop PulsarAgent` | Stop service |
-| `nssm restart PulsarAgent` | Restart after config change |
-| `nssm status PulsarAgent` | Check service state |
-| `type C:\pulsar-agent\pulsar-agent.log` | View logs |
-| `uninstall.bat` (as Administrator) | Remove the service |
-
-Logs auto-rotate at 10 MB.
-
-## Configuration
-
-The shipped `config.yaml` is a template with placeholder values:
-
-```yaml
-devices:
-  - device_id: workshop-front-door
-    vendor: hikvision
-    model: DS-K1T804AMF
-    poll_interval: 30s
-    http_timeout: 10s
-    hikvision:
-      url: http://192.168.x.x          # device IP
-      username: admin
-      password: REPLACE_ME              # admin password set during activation
-      max_events_per_poll: 30
-      default_door_right: "1"
-
-erp:
-  url: https://your-erp.example.com
-  client_id: REPLACE_WITH_CLIENT_ID
-  client_secret: REPLACE_WITH_CLIENT_SECRET
-
-provisioning:
-  enabled: true
-  branch_id: 00000000-0000-0000-0000-000000000000  # branch UUID from ERP
-  poll_interval: 60s
-```
-
-Multiple devices per agent are supported — add more entries under `devices:`.
+| Start / stop / restart the service | `services.msc` → *Pulsar Access-Control Agent*, or `sc start/stop PulsarAgent` (admin), or the tray's **Restart agent** |
+| Check service state | `sc query PulsarAgent` |
+| View logs | Tray → **View logs**, or open `C:\ProgramData\Pulsar\pulsar-agent.log` |
+| Add / change / remove terminals | Dashboard → **Devices** |
+| Re-pair with the ERP | Dashboard → **Re-pair** |
 
 ## Versioning
 
@@ -107,18 +118,17 @@ Releases follow [Semantic Versioning](https://semver.org/).
 
 - **Major** (`v1.0.0 → v2.0.0`): breaking changes to the config schema or the
   ERP HTTP contract.
-- **Minor** (`v0.1.0 → v0.2.0`): new features (additional vendors, new ERP
-  endpoints, new adapter capabilities) — backwards-compatible.
+- **Minor** (`v0.1.0 → v0.2.0`): new features — backwards-compatible.
 - **Patch** (`v0.1.0 → v0.1.1`): bug fixes and security patches.
 
 Each release filename embeds both the version and the short source SHA, e.g.,
-`pulsar-agent-windows-v0.1.0-d9523dd.zip` — `d9523dd` is the source commit it
-was built from.
+`PulsarSetup-v0.2.0-3df3779.exe` — `3df3779` is the source commit it was built from.
 
 ## Supported platforms
 
 - **Windows x86-64**: Windows 10/11, Windows Server 2016+. Officially supported.
-- **Linux x86-64**: testing only; not yet shipped here.
+- **Linux / macOS**: the agent builds and runs (service management and the tray
+  are Windows-only); not shipped here.
 
 ## License
 

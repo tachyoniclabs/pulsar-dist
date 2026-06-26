@@ -4,6 +4,50 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.2.0] — 2026-06-26
+
+Self-service Windows release. Replaces the NSSM + `install.bat` + hand-edited
+`config.yaml` flow with a guided installer, a browser setup wizard, and a
+system-tray app. A non-technical user can stand up a branch in ~10 minutes
+without a terminal.
+
+### Added
+
+- **`PulsarSetup.exe` installer (Inno Setup).** Double-click + UAC → installs to
+  `C:\Program Files\Pulsar`, registers the `PulsarAgent` service as a **native
+  Windows service** (no more NSSM), adds the tray app to login autostart, and
+  opens the setup wizard. Clean uninstall from Add/Remove Programs, with an
+  opt-in prompt to keep or purge `C:\ProgramData\Pulsar` (default: keep, so a
+  reinstall preserves pairing + devices).
+- **Browser setup wizard** at `127.0.0.1:9090`: pair with the ERP via a one-time
+  **pairing code** (no client secret or branch UUID handled by hand), scan the
+  local network for Hikvision terminals (or add by IP) with an inline **Test**
+  that auto-detects the model, then review & finish. The same app is the ongoing
+  dashboard — add/edit/remove devices and re-pair, applied live via config
+  hot-reload (no restart).
+- **System-tray app** (`pulsar-tray.exe`): green/amber/red status icon plus Open
+  Dashboard, View logs, Restart agent (elevated), and Quit.
+
+### Changed
+
+- **All secrets are sealed at rest.** The ERP client secret *and* every Hikvision
+  device password are encrypted with Windows DPAPI (machine scope) in
+  `secret.dat`; `config.yaml` now contains **no secrets**.
+- Runtime data moved to `C:\ProgramData\Pulsar` (service-writable); binaries live
+  in `C:\Program Files\Pulsar`.
+
+### Security
+
+- The local web API is guarded against CSRF and DNS-rebinding (loopback `Host`
+  allowlist, `Origin` check, and a JSON content-type requirement on all
+  state-changing requests).
+
+### Requires
+
+- ERP-side support for agent pairing (the *"Add access-control agent"* portal
+  action and the pairing/exchange endpoints). Without it, the wizard's
+  "Connect to your ERP" step cannot complete.
+
 ## [v0.1.4] — 2026-05-27
 
 Hardening release from the ACME workshop install — five Hikvision V1.4.x
