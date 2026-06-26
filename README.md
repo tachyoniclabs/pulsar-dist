@@ -28,7 +28,7 @@ Each release contains:
 
 ```powershell
 # Replace with the file you downloaded
-$exe = "PulsarSetup-v0.2.0-3df3779.exe"
+$exe = "PulsarSetup-v0.2.0-d80255d.exe"
 
 $expected = (Get-Content SHA256SUMS | Select-String $exe).ToString().Split(" ")[0]
 $actual   = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLower()
@@ -36,9 +36,9 @@ $actual   = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLower()
 if ($expected -eq $actual) { "OK" } else { "MISMATCH — do not install" }
 ```
 
-The installer is also code-signed. If Windows SmartScreen still warns on first
-run, that's expected for a freshly-signed publisher — click **More info → Run
-anyway**.
+This installer is **not yet code-signed**, so Windows SmartScreen will warn on
+first run ("Windows protected your PC"). Click **More info → Run anyway** to
+proceed. (A signed build is planned; verify the SHA-256 above in the meantime.)
 
 ## Install
 
