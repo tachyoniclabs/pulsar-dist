@@ -4,6 +4,53 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.3.10] — 2026-10-17
+
+Catch-up release — bundles everything since v0.2.0 (v0.2.1 through v0.3.10
+were never published as an installer until now). An in-place upgrade over
+v0.2.0 or any prior install.
+
+### Added
+- **Export enrolled users per device.** Download a terminal's currently
+  enrolled roster (device-side employee number + name) as a CSV — for
+  migrating a terminal's users to a different ERP tenant/branch. The device
+  itself is never touched and biometric templates never leave it.
+- **Device clock & timezone sync.** "Correct time" on the dashboard reads and
+  corrects a device's clock/timezone directly.
+- **Branch attribution on events.** Every event batch now carries the
+  agent's configured `branch_id`.
+- **"Re-pull history."** Re-fetch a terminal's history from a chosen date on
+  demand; safe to repeat (same `device_id`, so the ERP de-duplicates).
+- **Tenant subdomain** field in the setup wizard, with the production ERP
+  URL prefilled.
+- Per-device passwords everywhere, a redesigned 2-step wizard, collapsible
+  device cards, and 3-way connectivity health (device read/write + ERP
+  submit/pull) on the dashboard.
+
+### Fixed
+- **Data-loss fix:** every new terminal used to default to `device_id=door-1`,
+  so two different branches' swipes could collide and get silently dropped
+  as duplicates. New terminals now get a unique ID.
+- **Provisioner backoff + lockout detection:** a wrong/stale device password
+  used to retry every ~60s, which can trigger Hikvision's account lockout;
+  the agent now backs off and detects a lockout instead of hammering into it.
+- Failed provisioning changes are now reported back to the ERP (`nack`) so
+  one bad change dead-letters instead of blocking the whole queue
+  indefinitely.
+- Fixed a fresh-install bug where the web UI never started (port 9090 never
+  bound); the installer now stops the running service before copying files
+  on an upgrade.
+- A case-sensitivity bug that made Hikvision's "user already exists"
+  response stall re-provisioning instead of falling back to update.
+
+### Install
+1. Download `PulsarSetup-v0.3.10-394b78c.exe`, verify SHA-256 against
+   `SHA256SUMS`.
+2. Run as administrator (in-place upgrade, or fresh install).
+
+> ⚠️ Unsigned build — SmartScreen: *More info → Run anyway*. Verify the
+> SHA-256 first.
+
 ## [v0.2.0] — 2026-06-26
 
 Self-service Windows release. Replaces the NSSM + `install.bat` + hand-edited
