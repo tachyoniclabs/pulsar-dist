@@ -24,6 +24,12 @@ Each release contains:
 | `PulsarSetup-vX.Y.Z-<sha>.exe` | The installer (everything is inside it) |
 | `SHA256SUMS` | SHA-256 checksums for verification |
 
+## Supported devices
+
+See [`SUPPORTED-DEVICES.md`](SUPPORTED-DEVICES.md) for the current list of
+Hikvision terminals with full fingerprint/face support, and what to expect
+from an unlisted model.
+
 ## Verify the download (Windows PowerShell)
 
 ```powershell

@@ -4,6 +4,40 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.3.13] — 2026-11-10
+
+Catch-up release — bundles everything since v0.3.10 (v0.3.11 and v0.3.12
+were never published as an installer until now). An in-place upgrade over
+v0.3.10 or any prior install.
+
+### Added
+- **Export attendance per device.** Download a terminal's swipe/attendance
+  history for a chosen date range as a CSV — queried live from the device,
+  not from the agent's delivery buffer. Complements "Export users…", which
+  dumps the enrolled roster rather than swipe history.
+- **Expanded device support.** 28 more Hikvision Pro/Value Series terminals
+  are now profiled — fingerprint-only, face-only, and fingerprint+face
+  combo terminals get biometric enrollment enabled automatically instead of
+  falling back to the conservative card+PIN-only default. See
+  [`SUPPORTED-DEVICES.md`](SUPPORTED-DEVICES.md) for the full list.
+
+### Fixed
+- **CSV formula injection in "Export attendance…" timestamps.** A device
+  reporting a timestamp starting with `=`, `+`, `-`, or `@` could land in
+  the CSV unsanitized. Now sanitized the same way as the export's other
+  device-reported fields.
+- **Connectivity-column buttons clipped off-screen.** The device table now
+  scrolls horizontally within its own container instead of silently
+  clipping action buttons on narrower windows.
+
+### Install
+1. Download `PulsarSetup-v0.3.13-fb7c634.exe`, verify SHA-256 against
+   `SHA256SUMS`.
+2. Run as administrator (in-place upgrade, or fresh install).
+
+> ⚠️ Unsigned build — SmartScreen: *More info → Run anyway*. Verify the
+> SHA-256 first.
+
 ## [v0.3.10] — 2026-10-17
 
 Catch-up release — bundles everything since v0.2.0 (v0.2.1 through v0.3.10
