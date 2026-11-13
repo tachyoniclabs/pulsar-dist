@@ -4,6 +4,27 @@ All notable changes to Pulsar Agent are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning follows
 [SemVer](https://semver.org/).
 
+## [v0.3.14] — 2026-11-13
+
+In-place upgrade over v0.3.13 or any prior install.
+
+### Added
+- **Groundwork for shared-device multi-branch provisioning (feature-flagged
+  off).** Lays the plumbing for a single terminal to enroll and attribute
+  attendance across every branch in a tenant, for sites where one physical
+  device is shared by multiple branches. Gated off by default — not yet
+  available to operators, since it depends on a matching ERP-side change
+  that hasn't shipped yet. No visible change in this release; purely
+  internal until the flag is flipped in a future version.
+
+### Install
+1. Download `PulsarSetup-v0.3.14-02b3dc9.exe`, verify SHA-256 against
+   `SHA256SUMS`.
+2. Run as administrator (in-place upgrade, or fresh install).
+
+> ⚠️ Unsigned build — SmartScreen: *More info → Run anyway*. Verify the
+> SHA-256 first.
+
 ## [v0.3.13] — 2026-11-10
 
 Catch-up release — bundles everything since v0.3.10 (v0.3.11 and v0.3.12
